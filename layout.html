@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMATRA - Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2A84FF',
+                        primaryLight: '#EAF2FF',
+                        secondary: '#00C48C',
+                        warning: '#FF6B6B',
+                        bgSoft: '#F8F9FA'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Menyembunyikan scrollbar tapi tetap bisa di-scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Sistem Layar Anti-Bug: Memastikan flexbox tidak bertabrakan dengan hidden */
+        .screen {
+            display: none; /* Sembunyikan secara default */
+            position: absolute;
+            inset: 0;
+            flex-direction: column;
+            background-color: #F8F9FA;
+            overflow: hidden; /* Kontrol scroll dilakukan di dalam layar */
+        }
+
+        /* Kelas untuk layar yang sedang aktif */
+        .screen.active {
+            display: flex;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mode Aksesibilitas: Teks Besar */
+        .large-text-mode {
+            --text-scale: 1.15;
+        }
+        .large-text-mode p, .large-text-mode span, .large-text-mode h1, .large-text-mode h2, .large-text-mode h3, .large-text-mode h4 {
+            font-size: calc(1em * var(--text-scale)) !important;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body class="bg-gray-800 flex items-center justify-center min-h-screen p-4 font-sans">
+
+    <!-- Frame Ponsel -->
+    <div class="w-full max-w-[390px] h-[844px] bg-white rounded-[3rem] border-[12px] border-gray-900 shadow-2xl relative overflow-hidden flex flex-col">
+        
+        <!-- Notch / Dynamic Island Simulator -->
+        <div class="absolute top-0 inset-x-0 h-7 flex justify-center z-[60]">
+            <div class="w-36 h-7 bg-gray-900 rounded-b-3xl flex items-center justify-end px-3">
+                <div class="w-2 h-2 rounded-full bg-gray-800 border border-gray-700"></div>
+            </div>
+        </div>
+
+        <!-- Area Konten Utama (Berada di atas Bottom Nav) -->
+        <div class="flex-1 w-full relative">
+
+            <!-- ================= LAKAR 1: BERANDA (HOME) ================= -->
+            <div id="screen-home" class="screen active overflow-y-auto no-scrollbar pt-14 pb-8 px-5">
+                <!-- Header Profile -->
+                <div class="flex justify-between items-center mb-6 mt-2">
+                    <div class="flex items-center gap-3">
+                        <img src="https://i.pravatar.cc/150?img=5" alt="Profile" class="w-12 h-12 rounded-full border-2 border-primary object-cover">
+                        <div>
+                            <p class="text-[11px] text-gray-500 font-medium tracking-wide uppercase">Selamat datang,</p>
+                            <h1 class="text-base font-bold text-gray-800">Nyonya Aisyah</h1>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Fitur Aksesibilitas: Mode Teks Besar -->
+                        <button onclick="toggleTextSize()" class="w-8 h-8 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 hover:text-primary relative active:scale-95 transition-all" title="Perbesar Ukuran Teks">
+                            <i id="icon-text-size" class="fas fa-text-height text-xs"></i>
+                        </button>
+                        
+                        <!-- Panic Button: Panggilan Darurat IGD -->
+                        <button onclick="showEmergencyModal()" class="w-8 h-8 rounded-full bg-red-50 shadow-sm border border-red-200 flex items-center justify-center text-red-600 relative active:scale-95 transition-all animate-pulse" title="Panggil IGD Darurat">
+                            <i class="fas fa-phone-alt text-xs"></i>
+                        </button>
+
+                        <button class="w-8 h-8 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 relative active:scale-95 transition-transform">
+                            <i class="fas fa-bell text-xs"></i>
+                            <span class="absolute top-[5px] right-[6px] w-2 h-2 bg-warning border-2 border-white rounded-full"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hero Widget: Antrean Real-time -->
+                <div class="bg-gradient-to-br from-primary to-blue-500 rounded-[20px] p-5 text-white shadow-lg shadow-blue-500/30 mb-6 relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-10">
+                        <i class="fas fa-hospital text-9xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-xs font-semibold opacity-90 tracking-wide"><i class="fas fa-ticket-alt mr-1.5"></i> POLI KANDUNGAN</p>
+                            <span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-sm">Aktif</span>
+                        </div>
+                        <div class="flex items-end gap-3 my-3">
+                            <h2 class="text-6xl font-bold tracking-tight">B-12</h2>
+                            <p class="text-sm pb-1.5 opacity-90">Panggilan: <span class="font-bold">B-09</span></p>
+                        </div>
+                        <div class="mt-4 bg-white/20 rounded-xl p-3.5 flex justify-between items-center backdrop-blur-md border border-white/20">
+                            <div class="flex items-center gap-2">
+                                <i class="far fa-clock text-white/80"></i>
+                                <span class="text-sm font-medium">Estimasi Panggil</span>
+                            </div>
+                            <span class="font-bold text-base">± 15 Menit</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid Menu -->
+                <h3 class="text-sm font-bold text-gray-800 mb-3">Layanan Cepat</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="switchScreen('screen-home')" class="bg-white p-4 rounded-2xl shadow-sm text-left flex flex-col items-start gap-3 border border-gray-100 active:scale-[0.98] transition-transform">
+                        <div class="w-12 h-12 rounded-full bg-blue-50 text-primary flex items-center justify-center text-xl">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-700">Daftar Antrean</span>
+                    </button>
+                    <button onclick="switchScreen('screen-schedule')" class="bg-white p-4 rounded-2xl shadow-sm text-left flex flex-col items-start gap-3 border border-gray-100 active:scale-[0.98] transition-transform">
+                        <div class="w-12 h-12 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center text-xl">
+                            <i class="far fa-calendar-alt"></i>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-700">Jadwal Dokter</span>
+                    </button>
+                    <button onclick="switchScreen('screen-telemedicine')" class="bg-white p-4 rounded-2xl shadow-sm text-left flex flex-col items-start gap-3 border border-gray-100 active:scale-[0.98] transition-transform">
+                        <div class="w-12 h-12 rounded-full bg-green-50 text-secondary flex items-center justify-center text-xl">
+                            <i class="fas fa-stethoscope"></i>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-700">Telemedisin</span>
+                    </button>
+                    <button onclick="switchScreen('screen-rooms')" class="bg-white p-4 rounded-2xl shadow-sm text-left flex flex-col items-start gap-3 border border-gray-100 active:scale-[0.98] transition-transform">
+                        <div class="w-12 h-12 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center text-xl">
+                            <i class="fas fa-procedures"></i>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-700">Kamar Rawat</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================= LAKAR 2: JADWAL DOKTER ================= -->
+            <div id="screen-schedule" class="screen bg-white">
+                <div class="shrink-0 pt-12 px-5 pb-3 border-b border-gray-100 bg-white shadow-sm z-10">
+                    <h1 class="text-lg font-bold text-gray-800 mt-2">Jadwal Dokter</h1>
+                    <!-- Filter Tabs -->
+                    <div class="flex gap-2 mt-4 overflow-x-auto no-scrollbar pb-1">
+                        <button onclick="filterDoctors('semua', this)" class="filter-btn active-filter shrink-0 px-4 py-1.5 bg-primary text-white text-xs font-semibold rounded-full shadow-sm transition-colors">Semua</button>
+                        <button onclick="filterDoctors('kandungan', this)" class="filter-btn shrink-0 px-4 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-semibold rounded-full transition-colors">Poli Kandungan</button>
+                        <button onclick="filterDoctors('anak', this)" class="filter-btn shrink-0 px-4 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-semibold rounded-full transition-colors">Poli Anak</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto no-scrollbar p-5 pb-8 bg-bgSoft flex flex-col gap-4">
+                    <!-- Doctor 1: Kandungan -->
+                    <div class="doctor-card bg-white rounded-2xl p-4 shadow-sm border border-gray-100" data-poli="kandungan">
+                        <div class="flex gap-4 items-start">
+                            <img src="https://i.pravatar.cc/150?img=11" alt="Doctor" class="w-14 h-14 rounded-xl object-cover border border-gray-100">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-gray-800 text-sm">Dr. Hendra Wijaya, Sp.OG(K)</h3>
+                                <p class="text-[11px] text-gray-500 mb-2">Spesialis Kebidanan & Kandungan (Fetomaternal)</p>
+                                <span class="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Tersedia Hari Ini
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                            <div>
+                                <p class="text-[10px] text-gray-400 font-medium mb-0.5">Jam Praktik (Senin - Rabu)</p>
+                                <p class="text-xs font-bold text-gray-700"><i class="far fa-clock mr-1 text-primary"></i> 09:00 - 14:00 WIB</p>
+                            </div>
+                            <button class="bg-primaryLight text-primary hover:bg-primary hover:text-white transition-colors text-xs font-bold px-4 py-2 rounded-lg">
+                                Buat Janji
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Doctor 2: Anak -->
+                    <div class="doctor-card bg-white rounded-2xl p-4 shadow-sm border border-gray-100" data-poli="anak">
+                        <div class="flex gap-4 items-start">
+                            <img src="https://i.pravatar.cc/150?img=9" alt="Doctor" class="w-14 h-14 rounded-xl object-cover border border-gray-100">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-gray-800 text-sm">Dr. Clara Puspita, Sp.A(K)</h3>
+                                <p class="text-[11px] text-gray-500 mb-2">Spesialis Anak (Tumbuh Kembang)</p>
+                                <span class="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Tersedia Hari Ini
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center">
+                            <div>
+                                <p class="text-[10px] text-gray-400 font-medium mb-0.5">Jam Praktik (Selasa - Kamis)</p>
+                                <p class="text-xs font-bold text-gray-700"><i class="far fa-clock mr-1 text-primary"></i> 10:00 - 16:00 WIB</p>
+                            </div>
+                            <button class="bg-primaryLight text-primary hover:bg-primary hover:text-white transition-colors text-xs font-bold px-4 py-2 rounded-lg">
+                                Buat Janji
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Doctor 3: Kandungan -->
+                    <div class="doctor-card bg-white rounded-2xl p-4 shadow-sm border border-gray-100" data-poli="kandungan">
+                        <div class="flex gap-4 items-start">
+                            <img src="https://i.pravatar.cc/150?img=5" alt="Doctor" class="w-14 h-14 rounded-xl object-cover border border-gray-100">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-gray-800 text-sm">Dr. Diana Larasati, Sp.OG</h3>
+                                <p class="text-[11px] text-gray-500 mb-2">Spesialis Kebidanan & Kandungan</p>
+                                <span class="bg-gray-100 text-gray-600 text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                    <i class="fas fa-calendar-times"></i> Cuti / Tidak Praktik
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center opacity-60">
+                            <div>
+                                <p class="text-[10px] text-gray-400 font-medium mb-0.5">Jam Praktik (Jumat - Sabtu)</p>
+                                <p class="text-xs font-bold text-gray-700"><i class="far fa-clock mr-1 text-gray-400"></i> 15:00 - 20:00 WIB</p>
+                            </div>
+                            <button disabled class="bg-gray-100 text-gray-400 text-xs font-bold px-4 py-2 rounded-lg cursor-not-allowed">
+                                Penuh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= LAKAR 3: TELEMEDISIN ================= -->
+            <div id="screen-telemedicine" class="screen bg-white">
+                <!-- Chat Header -->
+                <div class="shrink-0 pt-12 px-5 pb-3 border-b border-gray-100 bg-white shadow-sm flex items-center gap-3 z-10">
+                    <button onclick="switchScreen('screen-home')" class="w-8 h-8 flex items-center justify-center text-gray-600 rounded-full hover:bg-gray-100">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                        <i class="fas fa-robot text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">Asisten AI SIMATRA <span class="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-[8px] px-1.5 py-0.5 rounded-sm shadow-sm">GEMINI</span></h2>
+                        <p class="text-[10px] text-secondary font-medium flex items-center gap-1"><span class="w-1.5 h-1.5 bg-secondary rounded-full"></span> Skrining Triage Pintar</p>
+                    </div>
+                    <button class="ml-auto text-gray-400 hover:text-primary"><i class="fas fa-info-circle"></i></button>
+                </div>
+
+                <!-- Chat Content -->
+                <div id="chat-container" class="flex-1 overflow-y-auto no-scrollbar p-5 bg-bgSoft flex flex-col gap-4">
+                    <p class="text-center text-[10px] text-gray-400 font-medium my-2">Hari ini</p>
+                    
+                    <!-- Bubble AI (Welcome) -->
+                    <div class="self-start max-w-[85%] bg-white border border-gray-100 text-gray-800 p-3.5 rounded-2xl rounded-tl-sm shadow-sm">
+                        <p class="text-sm leading-relaxed">Halo! Saya Asisten AI SIMATRA yang ditenagai oleh Google Gemini. Ada keluhan kesehatan seputar kehamilan atau tumbuh kembang anak yang bisa saya bantu jawab sebagai skrining awal hari ini?</p>
+                        <p class="text-[10px] text-gray-400 mt-1">Sistem AI</p>
+                    </div>
+                </div>
+
+                <!-- Chat Input (Sticky di bawah) -->
+                <div class="shrink-0 p-4 bg-white border-t border-gray-100 z-10">
+                    <div class="flex items-center gap-2 bg-gray-50 rounded-full p-1.5 pr-2 border border-gray-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                        <!-- Fitur Voice Note / Input Suara -->
+                        <button class="w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:text-primary flex items-center justify-center shrink-0 transition-colors" title="Kirim Voice Note">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <input id="chat-input" type="text" placeholder="Ketik keluhan..." class="flex-1 bg-transparent text-sm text-gray-800 outline-none px-2" onkeypress="handleChatKeyPress(event)">
+                        <button onclick="sendChatMessage()" class="w-9 h-9 rounded-full bg-primary text-white flex items-center justify-center shrink-0 shadow-sm active:scale-95 transition-transform">
+                            <i class="fas fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= LAKAR 4: RAWAT INAP (Kamar) ================= -->
+            <div id="screen-rooms" class="screen bg-white">
+                <!-- Sticky Header -->
+                <div class="shrink-0 pt-12 px-5 pb-3 border-b border-gray-100 bg-white shadow-sm z-10">
+                    <h1 class="text-lg font-bold text-gray-800 mt-2">Ketersediaan Kamar</h1>
+                    <!-- Tabs (Interaktif) -->
+                    <div class="flex mt-4 bg-gray-100 p-1 rounded-xl">
+                        <button onclick="filterRooms('reguler', this)" class="room-tab flex-1 py-2 bg-white rounded-lg shadow-sm text-sm font-semibold text-gray-800 transition-all">Reguler</button>
+                        <button onclick="filterRooms('vip', this)" class="room-tab flex-1 py-2 text-sm font-medium text-gray-500 transition-all hover:text-gray-700">VIP & VVIP</button>
+                    </div>
+                </div>
+                
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto no-scrollbar p-5 pb-8 bg-bgSoft flex flex-col gap-4">
+                    <div class="bg-warning/10 border border-warning/20 p-3 rounded-xl flex items-start gap-3">
+                        <i class="fas fa-info-circle text-warning mt-0.5"></i>
+                        <p class="text-[11px] text-gray-700 leading-relaxed font-medium">Informasi diperbarui real-time. Hubungi IGD langsung jika pasien dalam kondisi gawat darurat.</p>
+                    </div>
+
+                    <!-- DATA KAMAR REGULER -->
+                    
+                    <!-- Card Kamar 1 (Reguler - Kelas 1) -->
+                    <div class="room-card bg-white rounded-2xl p-4 shadow-sm border border-gray-100" data-room-type="reguler">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Ruang Mawar</h3>
+                                <p class="text-xs text-gray-500 mt-0.5">Kelas 1 - Maternal (Ibu Bersalin)</p>
+                            </div>
+                            <span class="bg-green-100 text-green-700 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md font-bold shrink-0">Tersedia</span>
+                        </div>
+                        <div class="flex justify-between text-xs mb-2 mt-4">
+                            <span class="text-gray-500 font-medium">Terisi: <span class="text-gray-800">8 dari 15 Bed</span></span>
+                            <span class="font-bold text-gray-700">53%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-secondary h-full rounded-full transition-all duration-1000" style="width: 53%"></div>
+                        </div>
+                        <!-- Fasilitas -->
+                        <div class="mt-4 pt-3 border-t border-gray-100">
+                            <p class="text-[10px] font-bold text-gray-800 mb-2"><i class="fas fa-check-circle text-secondary mr-1"></i>Fasilitas Kelas 1:</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[9px] bg-blue-50 text-primary px-2 py-1 rounded border border-blue-100">2 Pasien / Kamar</span>
+                                <span class="text-[9px] bg-blue-50 text-primary px-2 py-1 rounded border border-blue-100">AC</span>
+                                <span class="text-[9px] bg-blue-50 text-primary px-2 py-1 rounded border border-blue-100">TV Berbagi</span>
+                                <span class="text-[9px] bg-blue-50 text-primary px-2 py-1 rounded border border-blue-100">Kamar Mandi Dalam</span>
+                                <span class="text-[9px] bg-blue-50 text-primary px-2 py-1 rounded border border-blue-100">Kursi Penunggu</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Kamar 2 (Reguler - Kelas 2) -->
+                    <div class="room-card bg-white rounded-2xl p-4 shadow-sm border border-gray-100 border-l-4 border-l-warning" data-room-type="reguler">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Ruang Melati</h3>
+                                <p class="text-xs text-gray-500 mt-0.5">Kelas 2 - Pediatrik (Anak)</p>
+                            </div>
+                            <span class="bg-red-100 text-red-600 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md font-bold shrink-0">Penuh</span>
+                        </div>
+                        <div class="flex justify-between text-xs mb-2 mt-4">
+                            <span class="text-gray-500 font-medium">Terisi: <span class="text-gray-800">20 dari 20 Bed</span></span>
+                            <span class="font-bold text-warning">100%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-warning h-full rounded-full transition-all duration-1000" style="width: 100%"></div>
+                        </div>
+                        <!-- Fasilitas -->
+                        <div class="mt-4 pt-3 border-t border-gray-100">
+                            <p class="text-[10px] font-bold text-gray-800 mb-2"><i class="fas fa-check-circle text-secondary mr-1"></i>Fasilitas Kelas 2:</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[9px] bg-gray-50 text-gray-600 px-2 py-1 rounded border border-gray-200">4 Pasien / Kamar</span>
+                                <span class="text-[9px] bg-gray-50 text-gray-600 px-2 py-1 rounded border border-gray-200">Kipas/AC Sentral</span>
+                                <span class="text-[9px] bg-gray-50 text-gray-600 px-2 py-1 rounded border border-gray-200">Kamar Mandi Luar</span>
+                                <span class="text-[9px] bg-gray-50 text-gray-600 px-2 py-1 rounded border border-gray-200">Nakas Pasien</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATA KAMAR VIP & VVIP -->
+                    <!-- Card Kamar 3 (VVIP) -->
+                    <div class="room-card bg-white rounded-2xl p-4 shadow-sm border border-yellow-200 relative overflow-hidden" data-room-type="vip" style="display: none;">
+                        <div class="absolute top-0 right-0 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white text-[9px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider shadow-sm">
+                            <i class="fas fa-star text-[8px] mr-1"></i>VVIP
+                        </div>
+                        <div class="flex justify-between items-start mb-3 mt-1">
+                            <div>
+                                <h3 class="font-bold text-gray-800 text-base text-yellow-700">Suite Anggrek</h3>
+                                <p class="text-xs text-gray-500 mt-0.5">VVIP - Semua Penanganan</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-xs mb-2 mt-4">
+                            <span class="text-gray-500 font-medium">Terisi: <span class="text-gray-800">1 dari 5 Suite</span></span>
+                            <span class="font-bold text-gray-700">20%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-yellow-400 h-full rounded-full transition-all duration-1000" style="width: 20%"></div>
+                        </div>
+                        <!-- Fasilitas -->
+                        <div class="mt-4 pt-3 border-t border-gray-100">
+                            <p class="text-[10px] font-bold text-gray-800 mb-2"><i class="fas fa-gem text-yellow-500 mr-1"></i>Fasilitas Eksklusif VVIP:</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[9px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 font-medium">1 Pasien (Privat)</span>
+                                <span class="text-[9px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 font-medium">AC Privat</span>
+                                <span class="text-[9px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 font-medium">Smart TV 43"</span>
+                                <span class="text-[9px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 font-medium">Sofa Bed Pendamping</span>
+                                <span class="text-[9px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 font-medium">Kulkas & Microwave</span>
+                                <span class="text-[9px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 font-medium">Kamar Mandi Air Panas</span>
+                                <span class="text-[9px] bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 font-medium">Welcome Fruit & Meal</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Kamar 4 (VIP) -->
+                    <div class="room-card bg-white rounded-2xl p-4 shadow-sm border border-purple-100 relative overflow-hidden" data-room-type="vip" style="display: none;">
+                        <div class="absolute top-0 right-0 bg-purple-100 text-purple-700 text-[9px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
+                            VIP
+                        </div>
+                        <div class="flex justify-between items-start mb-3 mt-1">
+                            <div>
+                                <h3 class="font-bold text-gray-800">Ruang Tulip</h3>
+                                <p class="text-xs text-gray-500 mt-0.5">VIP - Maternal & Pediatrik</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-xs mb-2 mt-4">
+                            <span class="text-gray-500 font-medium">Terisi: <span class="text-gray-800">10 dari 12 Bed</span></span>
+                            <span class="font-bold text-gray-700">83%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-purple-400 h-full rounded-full transition-all duration-1000" style="width: 83%"></div>
+                        </div>
+                        <!-- Fasilitas -->
+                        <div class="mt-4 pt-3 border-t border-gray-100">
+                            <p class="text-[10px] font-bold text-gray-800 mb-2"><i class="fas fa-star text-purple-500 mr-1"></i>Fasilitas VIP:</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[9px] bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">1 Pasien (Privat)</span>
+                                <span class="text-[9px] bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">AC</span>
+                                <span class="text-[9px] bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">TV 32"</span>
+                                <span class="text-[9px] bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">Sofa Pendamping</span>
+                                <span class="text-[9px] bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">Kulkas Mini</span>
+                                <span class="text-[9px] bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">Kamar Mandi Dalam</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ================= LAKAR 5: RIWAYAT MEDIS ================= -->
+            <div id="screen-history" class="screen bg-white">
+                <div class="shrink-0 pt-12 px-5 pb-3 border-b border-gray-100 bg-white shadow-sm z-10">
+                    <h1 class="text-lg font-bold text-gray-800 mt-2 text-center">Rekam Medis</h1>
+                    <div class="flex mt-4 bg-gray-100 p-1 rounded-xl">
+                        <button class="flex-1 py-2 text-sm font-medium text-gray-500 transition-all hover:text-gray-700">Maternal</button>
+                        <button class="flex-1 py-2 bg-white rounded-lg shadow-sm text-sm font-semibold text-primary transition-all">Pediatric (Anak)</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 overflow-y-auto no-scrollbar p-5 pb-8 bg-bgSoft flex flex-col gap-5">
+                    <!-- Grafik Pertumbuhan Dummy -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-800">Grafik Berat Badan</h3>
+                                <p class="text-[10px] text-gray-500">0 - 5 Bulan Terakhir</p>
+                            </div>
+                            <span class="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-md">Normal</span>
+                        </div>
+                        <!-- SVG Chart Simulation -->
+                        <div class="w-full h-32 bg-primaryLight/30 rounded-lg relative overflow-hidden flex items-end">
+                            <svg viewBox="0 0 100 40" class="w-full h-full preserve-3d" preserveAspectRatio="none">
+                                <path d="M0 35 Q 20 30 40 25 T 80 15 T 100 5 L 100 40 L 0 40 Z" fill="#EAF2FF" opacity="0.6"/>
+                                <path d="M0 35 Q 20 30 40 25 T 80 15 T 100 5" fill="none" stroke="#2A84FF" stroke-width="1.5"/>
+                                <circle cx="0" cy="35" r="2" fill="#2A84FF" />
+                                <circle cx="20" cy="31" r="2" fill="#2A84FF" />
+                                <circle cx="40" cy="25" r="2" fill="#2A84FF" />
+                                <circle cx="60" cy="21" r="2" fill="#2A84FF" />
+                                <circle cx="80" cy="15" r="2" fill="#2A84FF" />
+                                <circle cx="100" cy="5" r="2" fill="#2A84FF" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Riwayat -->
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-800 mb-4">Riwayat Kunjungan</h3>
+                        <div class="relative border-l-2 border-primary/20 ml-2 pl-4 flex flex-col gap-4">
+                            <!-- Timeline Item 1 -->
+                            <div class="relative">
+                                <div class="absolute -left-[21px] top-1 w-3 h-3 bg-primary rounded-full border-2 border-white"></div>
+                                <p class="text-[10px] font-bold text-primary mb-1">24 Nov 2023</p>
+                                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                                    <h4 class="text-xs font-bold text-gray-800">Imunisasi DPT 1 & Polio 2</h4>
+                                    <p class="text-[10px] text-gray-500 mb-2">Klinik Anak • Dr. Sarah Amanda</p>
+                                    <div class="flex gap-2 mb-2">
+                                        <div class="bg-gray-50 flex-1 p-2 rounded text-center">
+                                            <p class="text-[8px] text-gray-400 font-bold">SUHU</p>
+                                            <p class="text-[10px] font-bold text-gray-700">36.5°C</p>
+                                        </div>
+                                        <div class="bg-gray-50 flex-1 p-2 rounded text-center">
+                                            <p class="text-[8px] text-gray-400 font-bold">BERAT</p>
+                                            <p class="text-[10px] font-bold text-gray-700">5.8 kg</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-[9px] text-gray-600 bg-blue-50 p-1.5 rounded border border-blue-100">Kondisi anak sehat, tidak ada demam pasca imunisasi.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Timeline Item 2 -->
+                            <div class="relative">
+                                <div class="absolute -left-[21px] top-1 w-3 h-3 bg-gray-300 rounded-full border-2 border-white"></div>
+                                <p class="text-[10px] font-bold text-gray-400 mb-1">10 Okt 2023</p>
+                                <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 opacity-70">
+                                    <h4 class="text-xs font-bold text-gray-800">Cek Tumbuh Kembang</h4>
+                                    <p class="text-[10px] text-gray-500">Klinik Anak • Dr. Budi Santoso</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- End of Content Area -->
+
+        <!-- ================= BOTTOM NAVIGATION BAR ================= -->
+        <nav class="shrink-0 h-[84px] bg-white border-t border-gray-100 flex justify-around items-start pt-3 px-1 z-50 pb-5 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative">
+            <button onclick="switchScreen('screen-home')" id="nav-screen-home" class="nav-btn flex flex-col items-center gap-1.5 text-primary flex-1 transition-colors duration-200">
+                <i class="fas fa-home text-[22px]"></i>
+                <span class="text-[9px] font-semibold">Beranda</span>
+            </button>
+            <button onclick="switchScreen('screen-schedule')" id="nav-screen-schedule" class="nav-btn flex flex-col items-center gap-1.5 text-gray-400 flex-1 transition-colors duration-200 hover:text-gray-600">
+                <i class="far fa-calendar-alt text-[22px]"></i>
+                <span class="text-[9px] font-semibold">Jadwal</span>
+            </button>
+            <button onclick="switchScreen('screen-telemedicine')" id="nav-screen-telemedicine" class="nav-btn flex flex-col items-center gap-1.5 text-gray-400 flex-1 transition-colors duration-200 hover:text-gray-600">
+                <i class="fas fa-stethoscope text-[22px]"></i>
+                <span class="text-[9px] font-semibold">Konsultasi</span>
+            </button>
+            <button onclick="switchScreen('screen-rooms')" id="nav-screen-rooms" class="nav-btn flex flex-col items-center gap-1.5 text-gray-400 flex-1 transition-colors duration-200 hover:text-gray-600">
+                <i class="fas fa-bed text-[22px]"></i>
+                <span class="text-[9px] font-semibold">Kamar</span>
+            </button>
+            <button onclick="switchScreen('screen-history')" id="nav-screen-history" class="nav-btn flex flex-col items-center gap-1.5 text-gray-400 flex-1 transition-colors duration-200 hover:text-gray-600">
+                <i class="fas fa-file-medical text-[22px]"></i>
+                <span class="text-[9px] font-semibold">Riwayat</span>
+            </button>
+        </nav>
+
+    </div> <!-- End of Phone Frame -->
+
+    <!-- ================= MODAL DARURAT (PANIC BUTTON) ================= -->
+    <div id="emergency-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 hidden opacity-0 transition-opacity duration-300 font-sans">
+        <div class="bg-white p-6 rounded-3xl w-11/12 max-w-[320px] shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col items-center text-center relative overflow-hidden">
+            <div class="absolute top-0 inset-x-0 h-2 bg-red-600"></div>
+            <div class="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4 mt-2 animate-pulse border-4 border-red-50">
+                <i class="fas fa-ambulance text-3xl text-red-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Panggilan Darurat</h3>
+            <p class="text-sm text-gray-500 mb-6 leading-relaxed">Anda akan terhubung langsung dengan Instalasi Gawat Darurat (IGD) RSIA. Pastikan ini adalah kondisi darurat medis.</p>
+            <div class="flex gap-3 w-full">
+                <button onclick="closeEmergencyModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors text-sm">Batal</button>
+                <button onclick="closeEmergencyModal()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-red-600/30 text-sm flex items-center justify-center gap-2">
+                    <i class="fas fa-phone"></i> Hubungi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchScreen(targetScreenId) {
+            // 1. Matikan semua layar (hilangkan class 'active')
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // 2. Aktifkan layar yang dituju
+            const targetScreen = document.getElementById(targetScreenId);
+            if(targetScreen) {
+                targetScreen.classList.add('active');
+            }
+
+            // 3. Reset warna semua ikon navigasi ke abu-abu
+            const navBtns = document.querySelectorAll('.nav-btn');
+            navBtns.forEach(btn => {
+                btn.classList.remove('text-primary');
+                btn.classList.add('text-gray-400');
+            });
+
+            // 4. Ubah warna ikon yang ditekan menjadi biru (aktif)
+            const activeNavBtn = document.getElementById('nav-' + targetScreenId);
+            if(activeNavBtn) {
+                activeNavBtn.classList.remove('text-gray-400');
+                activeNavBtn.classList.add('text-primary');
+            }
+        }
+
+        // Fungsi Filter Jadwal Dokter
+        function filterDoctors(category, btnElement) {
+            const allBtns = document.querySelectorAll('.filter-btn');
+            allBtns.forEach(btn => {
+                btn.className = "filter-btn shrink-0 px-4 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-semibold rounded-full transition-colors";
+            });
+            btnElement.className = "filter-btn active-filter shrink-0 px-4 py-1.5 bg-primary text-white text-xs font-semibold rounded-full shadow-sm transition-colors";
+
+            const doctorCards = document.querySelectorAll('.doctor-card');
+            doctorCards.forEach(card => {
+                const poli = card.getAttribute('data-poli');
+                if (category === 'semua' || category === poli) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Fungsi Filter Kamar (Reguler vs VIP/VVIP)
+        function filterRooms(type, btnElement) {
+            const allTabs = document.querySelectorAll('.room-tab');
+            allTabs.forEach(tab => {
+                tab.className = "room-tab flex-1 py-2 text-sm font-medium text-gray-500 transition-all hover:text-gray-700";
+            });
+            btnElement.className = "room-tab flex-1 py-2 bg-white rounded-lg shadow-sm text-sm font-semibold text-gray-800 transition-all";
+
+            const roomCards = document.querySelectorAll('.room-card');
+            roomCards.forEach(card => {
+                if (card.getAttribute('data-room-type') === type) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // ================= FITUR BARU: AKSESIBILITAS & DARURAT =================
+        
+        // Fungsi Mode Teks Besar
+        function toggleTextSize() {
+            const appContainer = document.querySelector('.screen.active').parentElement;
+            appContainer.classList.toggle('large-text-mode');
+            
+            // Ubah warna ikon sebagai penanda aktif
+            const icon = document.getElementById('icon-text-size');
+            if(appContainer.classList.contains('large-text-mode')) {
+                icon.classList.remove('text-gray-400');
+                icon.classList.add('text-primary');
+            } else {
+                icon.classList.remove('text-primary');
+                icon.classList.add('text-gray-400');
+            }
+        }
+
+        // Fungsi Tampilkan Modal Darurat
+        function showEmergencyModal() {
+            const modal = document.getElementById('emergency-modal');
+            modal.classList.remove('hidden');
+            // Delay tipis agar animasi CSS jalan
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('div').classList.remove('scale-95');
+                modal.querySelector('div').classList.add('scale-100');
+            }, 10);
+        }
+
+        // Fungsi Tutup Modal Darurat
+        function closeEmergencyModal() {
+            const modal = document.getElementById('emergency-modal');
+            modal.classList.add('opacity-0');
+            modal.querySelector('div').classList.remove('scale-100');
+            modal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        let chatHistory = []; // Menyimpan konteks percakapan
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        async function sendChatMessage() {
+            const inputField = document.getElementById('chat-input');
+            const message = inputField.value.trim();
+            if (!message) return;
+
+            // 1. Tampilkan pesan user ke layar
+            appendMessage(message, 'user');
+            inputField.value = '';
+            
+            // Simpan ke riwayat agar AI ingat percakapan sebelumnya
+            chatHistory.push({
+                role: "user",
+                parts: [{ text: message }]
+            });
+
+            // 2. Tampilkan indikator loading AI
+            showLoading();
+
+            try {
+                // System Prompt untuk mengatur kepribadian (Persona) LLM
+                const systemPrompt = "Anda adalah Asisten AI SIMATRA, asisten virtual ramah dan profesional untuk Rumah Sakit Ibu dan Anak. Tugas Anda memberikan informasi kesehatan awal, skrining ringan, dan edukasi bagi ibu hamil, ibu menyusui, dan kesehatan anak. Selalu ingatkan pengguna dengan sopan bahwa Anda adalah AI dan untuk keadaan darurat (seperti kejang, pendarahan hebat) mereka harus segera ke IGD atau berkonsultasi dengan dokter asli. Jawab dalam bahasa Indonesia, gunakan format yang rapi (bold untuk poin penting), maksimal 2-3 paragraf pendek, sangat empatik, dan berikan kesan menenangkan bagi pasien yang panik.";
+                
+                const payload = {
+                    contents: chatHistory,
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    }
+                };
+
+                const apiKey = ""; // API Key otomatis disediakan oleh Canvas
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                hideLoading();
+                
+                if (result.candidates && result.candidates[0].content) {
+                    const aiResponse = result.candidates[0].content.parts[0].text;
+                    appendMessage(aiResponse, 'ai');
+                    
+                    // Simpan respon AI ke riwayat
+                    chatHistory.push({
+                        role: "model",
+                        parts: [{ text: aiResponse }]
+                    });
+                } else {
+                    appendMessage("Maaf, sistem sedang sibuk. Silakan coba lagi.", 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                appendMessage("Terjadi kesalahan jaringan saat menghubungi AI. Silakan periksa koneksi Anda.", 'error');
+                console.error("Gemini API Error:", error);
+            }
+        }
+
+        function appendMessage(text, sender) {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            
+            // Parsing Markdown sederhana (mengubah **teks** menjadi <strong>teks</strong>)
+            let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+            if (sender === 'user') {
+                div.className = "self-end max-w-[85%] bg-primary text-white p-3.5 rounded-2xl rounded-tr-sm shadow-sm mt-3 animate-[fadeIn_0.3s_ease-out]";
+                div.innerHTML = `<p class="text-sm leading-relaxed">${formattedText}</p><p class="text-[10px] text-primaryLight text-right mt-1">Baru saja <i class="fas fa-check-double ml-1"></i></p>`;
+            } else if (sender === 'ai') {
+                div.className = "self-start max-w-[85%] bg-white border border-gray-100 text-gray-800 p-3.5 rounded-2xl rounded-tl-sm shadow-sm mt-3 animate-[fadeIn_0.3s_ease-out]";
+                div.innerHTML = `<p class="text-sm leading-relaxed">${formattedText}</p><p class="text-[10px] text-gray-400 mt-1">SIMATRA AI</p>`;
+            } else {
+                div.className = "self-center bg-red-50 border border-red-100 text-red-600 p-2 rounded-lg text-xs mt-3 animate-[fadeIn_0.3s_ease-out]";
+                div.innerHTML = formattedText;
+            }
+            
+            container.appendChild(div);
+            scrollToBottom(container);
+        }
+
+        function showLoading() {
+            const container = document.getElementById('chat-container');
+            const div = document.createElement('div');
+            div.id = "chat-loading";
+            div.className = "self-start bg-gray-50 text-gray-500 px-4 py-3 rounded-2xl rounded-tl-sm shadow-sm text-xs flex items-center gap-2 mt-3 animate-[fadeIn_0.3s_ease-out]";
+            div.innerHTML = `<i class="fas fa-circle-notch fa-spin text-primary"></i> <span class="italic font-medium">AI sedang menganalisis gejala...</span>`;
+            container.appendChild(div);
+            scrollToBottom(container);
+        }
+
+        function hideLoading() {
+            const loading = document.getElementById('chat-loading');
+            if (loading) {
+                loading.remove();
+            }
+        }
+
+        function scrollToBottom(element) {
+            // Memberikan sedikit waktu agar elemen DOM selesai dirender sebelum auto-scroll
+            setTimeout(() => {
+                element.scrollTop = element.scrollHeight;
+            }, 50);
+        }
+    </script>
+</body>
+</html>
